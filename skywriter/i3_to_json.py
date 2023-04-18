@@ -1,6 +1,6 @@
 """Helper script to extract CausalQTot and MJD data from i3 to h5."""
 
-# mypy: ignore-errors
+
 # fmt:off
 
 import argparse
@@ -8,8 +8,8 @@ import json
 import os
 from typing import List, Optional
 
-from I3Tray import I3Tray
-from icecube import (
+from I3Tray import I3Tray  # type: ignore[import]
+from icecube import (  # type: ignore[import]
     MuonGun,
     VHESelfVeto,
     astro,
@@ -18,8 +18,11 @@ from icecube import (
     icetray,
     recclasses,
 )
-from icecube.filterscripts import alerteventfollowup, filter_globals
-from icecube.full_event_followup import (
+from icecube.filterscripts import (  # type: ignore[import]
+    alerteventfollowup,
+    filter_globals,
+)
+from icecube.full_event_followup import (  # type: ignore[import]
     frame_packet_to_i3live_json,
     i3live_json_to_frame_packet,
 )
