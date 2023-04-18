@@ -76,6 +76,7 @@ jobs:
         run: |
           echo "pip install .[tests]" >> test.sh
           echo "pytest -vvv tests/unit" >> test.sh
+          chmod +x test.sh
           cat test.sh
           /usr/local/icetray/env-shell.sh test.sh
 
