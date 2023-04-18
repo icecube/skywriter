@@ -6,4 +6,4 @@ import skywriter
 
 def test_skyreader_imports() -> None:
     """Test importing from 'skyreader'."""
-    assert hasattr(skywriter, "EventMetadata")
+    assert hasattr(skywriter, "i3_to_json")
