@@ -65,6 +65,8 @@ jobs:
       fail-fast: false
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+    container:
+      image: icecube/icetray
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
@@ -78,11 +80,9 @@ jobs:
 
       - name: Test
         run: |
-          # need icecube for imports
-          docker run --rm -i \
-            --mount type=bind,source=$(readlink -f .),target=/project \
-            icecube/icetray \
-            "cd /project && pip install .[tests] && pytest -vvv tests/unit"
+          ls
+          pip install .[tests]
+          pytest -vvv tests/unit
 
   release:
     # only run on main/master/default
