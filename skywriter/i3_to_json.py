@@ -38,7 +38,7 @@ def alertify(frame):
         del frame['I3SuperDST']
         frame['I3SuperDST'] = dataclasses.I3SuperDST(
             dataclasses.I3RecoPulseSeriesMap.from_frame(frame, 'I3SuperDST_tmp'))
-        
+
     print('It seems like your i3 file is missing some cool keys')
     print(frame)
     print('I will add some fake ones')
@@ -49,9 +49,9 @@ def alertify(frame):
         frame['OnlineL2_SplineMPE_CramerRao_cr_zenith'] = dataclasses.I3Double(0)
         frame['OnlineL2_SplineMPE_CramerRao_cr_azimuth'] = dataclasses.I3Double(0)
         frame['OnlineL2_SplineMPE_MuE'] = dataclasses.I3Particle()
-        frame['OnlineL2_SplineMPE_MuE'].energy=0
+        frame['OnlineL2_SplineMPE_MuE'].energy = 0
         frame['OnlineL2_SplineMPE_MuEx'] = dataclasses.I3Particle()
-        frame['OnlineL2_SplineMPE_MuEx'].energy=0
+        frame['OnlineL2_SplineMPE_MuEx'].energy = 0
     if 'IceTop_SLC_InTime' not in frame:
         frame['IceTop_SLC_InTime'] = icetray.I3Bool(False)
 
@@ -69,7 +69,7 @@ def alertify(frame):
         frame['OnlineL2_BestFit_CramerRao_cr_zenith'] = dataclasses.I3Double(0)
         frame['OnlineL2_BestFit_CramerRao_cr_azimuth'] = dataclasses.I3Double(0)
         frame['OnlineL2_BestFit_MuEx'] = dataclasses.I3Particle()
-        frame['OnlineL2_BestFit_MuEx'].energy=0
+        frame['OnlineL2_BestFit_MuEx'].energy = 0
 
     if 'PoleEHEOpheliaParticle_ImpLF' not in frame:
         frame['PoleEHEOpheliaParticle_ImpLF'] = dataclasses.I3Particle()
@@ -83,7 +83,7 @@ def write_json(frame, extra):
         pnf_framing=False), pnf_framing=True)
     msg = json.loads(frame[filter_globals.alert_candidate_full_message].value)
     pnfmsg = json.loads(pnf)
-    fullmsg = {key: value for (key, value) in (list(msg.items()) + list(pnfmsg.items())) if key !='frames'}
+    fullmsg = {key: value for (key, value) in (list(msg.items()) + list(pnfmsg.items())) if key != 'frames'}
     extra_namer = {'OnlineL2_SplineMPE':'ol2_mpe'}
     try:
         uid_sub = (fullmsg['run_id'],
@@ -124,7 +124,7 @@ def write_json(frame, extra):
                         l1 = (exit-track.pos)*track.dir
                         e1 = track.get_energy(l1)
                     edep += (e0-e1)
-        fullmsg['true']['emuin']=edep
+        fullmsg['true']['emuin'] = edep
 
     jf = f'{fullmsg["unique_id"]}.sub{uid_sub[2]:03}.json'
     with open(jf, 'w') as f:
@@ -134,6 +134,7 @@ def write_json(frame, extra):
 
 def extract_original(i3files, orig_keys):
     extracted = {}
+
     def pullout(frame):
         uid = (frame['I3EventHeader'].run_id,
                frame['I3EventHeader'].event_id,
@@ -145,6 +146,7 @@ def extract_original(i3files, orig_keys):
             except KeyError as e:
                 print('KeyError:', e, uid)
         extracted[uid] = dd
+
     tray = I3Tray()
     tray.Add('I3Reader', Filenamelist=i3files)
     tray.Add(pullout)
@@ -161,7 +163,7 @@ def i3_to_json(i3s: List[str], extra: str, basegcd: str, out: str, nframes: Opti
     icetray.load('libtrigger-splitter', False)
     tray.Add('Delete', Keys=['SplitUncleanedInIcePulses','SplitUncleanedInIcePulsesTimeRange'])
     tray.AddModule('I3TriggerSplitter','InIceSplit')(
-        ("TrigHierName", 'DSTTriggers'), 
+        ("TrigHierName", 'DSTTriggers'),
         ('InputResponses', ['InIceDSTPulses']),
         ('OutputResponses', ['SplitUncleanedInIcePulses']),
     )
