@@ -1,6 +1,5 @@
 """Helper script to extract CausalQTot and MJD data from i3 to h5."""
 
-
 # fmt:off
 
 import argparse
