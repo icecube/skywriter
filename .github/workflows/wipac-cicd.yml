@@ -80,9 +80,9 @@ jobs:
         run: |
           # need icecube for imports
           docker run --rm -i \
-            --mount type=bind,source=$(readlink -f .),target=/local \
+            --mount type=bind,source=$(readlink -f .),target=/project \
             icecube/icetray \
-            "pip install .[tests] & pytest -vvv tests/unit"
+            "cd /project && pip install .[tests] && pytest -vvv tests/unit"
 
   release:
     # only run on main/master/default
