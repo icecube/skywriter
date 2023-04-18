@@ -75,7 +75,7 @@ jobs:
       - name: Test
         run: |
           /usr/local/icetray/env-shell.sh << EOF
-          pip install --upgrade pip wheel setuptools
+          pip install --upgrade pip wheel setuptools pytest
           pip install .[tests]
           pytest -vvv tests/unit
           EOF
