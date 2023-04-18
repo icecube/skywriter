@@ -23,6 +23,7 @@ from icecube.full_event_followup import (
     frame_packet_to_i3live_json,
     i3live_json_to_frame_packet,
 )
+from wipac_dev_tools import logging_tools
 
 
 def alertify(frame):
@@ -194,6 +195,8 @@ def main():
     parser.add_argument('-o', '--out', default='/dev/null',
                         help='output I3 file')
     args = parser.parse_args()
+
+    logging_tools.log_argparse_args(args)
 
     i3_to_json(args.i3s, args.extra, args.basegcd, args.out, args.nframes)
 
