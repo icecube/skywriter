@@ -81,7 +81,7 @@ jobs:
           # need icecube for imports
           docker run --rm -i \
             icecube/icetray \
-            pytest -vvv tests/unit
+            "pip install .[tests] & pytest -vvv tests/unit"
 
   release:
     # only run on main/master/default
