@@ -72,17 +72,12 @@ jobs:
       - uses: actions/setup-python@v3
         with:
           python-version: ${{ matrix.py3 }}
-
-      - name: pip install
-        run: |
-          pip install --upgrade pip wheel setuptools
-          pip install .[tests]
-
       - name: Test
         run: |
-          ls
-          pip install .[tests]
-          pytest -vvv tests/unit
+          echo "pip install .[tests]" >> test.sh
+          echo "pytest -vvv tests/unit" >> test.sh
+          cat test.sh
+          /usr/local/icetray/env-shell.sh test.sh
 
   release:
     # only run on main/master/default
