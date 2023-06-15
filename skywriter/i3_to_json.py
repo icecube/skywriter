@@ -100,7 +100,7 @@ def write_json(frame, extra):
         return False
 
     if 'I3MCTree' in frame:
-        prim = dataclasses.get_most_energetic_primary(frame['I3MCTree'])
+        prim = dataclasses.get_most_energetic_inice(frame['I3MCTree'])
         muhi = dataclasses.get_most_energetic_muon(frame['I3MCTree'])
         ra, dec = astro.dir_to_equa(prim.dir.zenith, prim.dir.azimuth,
                                     frame['I3EventHeader'].start_time.mod_julian_day_double)
