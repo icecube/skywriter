@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.0.3 (2023-06-15)
+
+### Other
+
+* Pull true direction from most-energetic in-ice ([#3](https://github.com/icecube/skywriter/issues/3)) ([`68931a7`](https://github.com/icecube/skywriter/commit/68931a7d4c2b855e0566c9eecb6388381b5f7418))
+
 ## v0.0.2 (2023-04-18)
 ### Other
 * <bot> update setup.cfg ([`b24681d`](https://github.com/icecube/skywriter/commit/b24681da42771d5b26a8d289bc977cd3ad282830))
