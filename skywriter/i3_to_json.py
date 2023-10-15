@@ -7,7 +7,15 @@ import json
 import os
 from typing import List, Optional
 
-from I3Tray import I3Tray  # type: ignore[import]
+from wipac_dev_tools import logging_tools
+
+# temporary workaround for https://github.com/icecube/icetray/issues/3112
+import warnings
+warnings.filterwarnings(
+    "ignore", ".*already registered; second conversion method ignored.", RuntimeWarning
+)
+
+from icecube.icetray import I3Tray  # type: ignore[import]
 from icecube import (  # type: ignore[import]
     MuonGun,
     VHESelfVeto,
@@ -25,11 +33,21 @@ from icecube.full_event_followup import (  # type: ignore[import]
     frame_packet_to_i3live_json,
     i3live_json_to_frame_packet,
 )
-from wipac_dev_tools import logging_tools
+
+#icetray.logging.console()
+
+def print_frame(frame):
+    print(frame)
+
+def print_framestop(frame):
+    print(f"Processing frame with Stop {frame.Stop}")
 
 
 def alertify(frame):
+    print(f"Alertify {frame.Stop} frame!")
+
     if 'SplitUncleanedInIcePulses' not in frame:
+        print("SplitUncleanedInIcePulses is not in frame. Skipping frame.")
         return False
 
     if isinstance(frame['I3SuperDST'], dataclasses.I3RecoPulseSeriesMapApplySPECorrection):
@@ -39,12 +57,13 @@ def alertify(frame):
         frame['I3SuperDST'] = dataclasses.I3SuperDST(
             dataclasses.I3RecoPulseSeriesMap.from_frame(frame, 'I3SuperDST_tmp'))
 
-    print('It seems like your i3 file is missing some cool keys')
-    print(frame)
-    print('I will add some fake ones')
+    # print('Dumping frame')
+    # print(frame)
+
     if filter_globals.EHEAlertFilter not in frame:
         frame[filter_globals.EHEAlertFilter] = icetray.I3Bool(True)
     if 'OnlineL2_SplineMPE' not in frame:
+        print('Adding dummy OnlineL2_SplineMPE')
         frame['OnlineL2_SplineMPE'] = dataclasses.I3Particle()
         frame['OnlineL2_SplineMPE_CramerRao_cr_zenith'] = dataclasses.I3Double(0)
         frame['OnlineL2_SplineMPE_CramerRao_cr_azimuth'] = dataclasses.I3Double(0)
@@ -53,16 +72,20 @@ def alertify(frame):
         frame['OnlineL2_SplineMPE_MuEx'] = dataclasses.I3Particle()
         frame['OnlineL2_SplineMPE_MuEx'].energy = 0
     if 'IceTop_SLC_InTime' not in frame:
+        print('Adding dummy IceTop_SLC_InTime')
         frame['IceTop_SLC_InTime'] = icetray.I3Bool(False)
 
     if 'IceTop_HLC_InTime' not in frame:
+        print('Adding dummy IceTop_HLC_InTime')
         frame['IceTop_HLC_InTime'] = icetray.I3Bool(False)
 
     if 'OnlineL2_SPE2itFit' not in frame:
+        print('Adding dummy OnlineL2_SPE2itFit')
         frame['OnlineL2_SPE2itFit'] = dataclasses.I3Particle()
         frame['OnlineL2_SPE2itFitFitParams'] = gulliver.I3LogLikelihoodFitParams()
 
     if 'OnlineL2_BestFit' not in frame:
+        print('Adding dummy OnlineL2_BestFit')
         frame['OnlineL2_BestFit'] = dataclasses.I3Particle()
         frame['OnlineL2_BestFit_Name'] = dataclasses.I3String("hi")
         frame['OnlineL2_BestFitFitParams'] = gulliver.I3LogLikelihoodFitParams()
@@ -72,8 +95,10 @@ def alertify(frame):
         frame['OnlineL2_BestFit_MuEx'].energy = 0
 
     if 'PoleEHEOpheliaParticle_ImpLF' not in frame:
+        print('Adding dummy PoleEHEOpheliaParticle_ImpLF')
         frame['PoleEHEOpheliaParticle_ImpLF'] = dataclasses.I3Particle()
     if 'PoleEHESummaryPulseInfo' not in frame:
+        print('Adding dummy PoleEHESummaryPulseInfo')
         frame['PoleEHESummaryPulseInfo'] = recclasses.I3PortiaEvent()
 
 
@@ -132,7 +157,7 @@ def write_json(frame, extra):
         print(f'Wrote {jf}')
 
 
-def extract_original(i3files, orig_keys):
+def extract_original(i3files, orig_keys: list[str]):
     extracted = {}
 
     def pullout(frame):
@@ -147,19 +172,32 @@ def extract_original(i3files, orig_keys):
                 print('KeyError:', e, uid)
         extracted[uid] = dd
 
+    def notify(frame):
+        print(f"Running extract_original on {frame.Stop} frame")
+
     tray = I3Tray()
     tray.Add('I3Reader', Filenamelist=i3files)
+    tray.Add(notify)
     tray.Add(pullout)
     tray.Execute()
     return extracted
 
 
 def i3_to_json(i3s: List[str], extra: str, basegcd: str, out: str, nframes: Optional[int]) -> None:
-    """Extract CausalQTot and MJD data from i3 to h5."""
-    extracted = extract_original(i3s, extra)
+    """Convert I3 file to JSON realtime format"""
+
+    extracted = extract_original(i3files=i3s, orig_keys=extra)
 
     tray = I3Tray()
     tray.Add('I3Reader', Filenamelist=i3s)
+
+    def notify(frame):
+        print(f"Running converter tray!")
+
+    tray.Add(notify)
+
+    tray.Add("Dump")
+
     icetray.load('libtrigger-splitter', False)
     tray.Add('Delete', Keys=['SplitUncleanedInIcePulses','SplitUncleanedInIcePulsesTimeRange'])
     tray.AddModule('I3TriggerSplitter','InIceSplit')(
@@ -167,12 +205,19 @@ def i3_to_json(i3s: List[str], extra: str, basegcd: str, out: str, nframes: Opti
         ('InputResponses', ['InIceDSTPulses']),
         ('OutputResponses', ['SplitUncleanedInIcePulses']),
     )
+
+
+    # tray.Add(print_frame)
+
     tray.Add(alertify)
+
     tray.Add(alerteventfollowup.AlertEventFollowup,
              base_GCD_path=os.path.dirname(basegcd),
              base_GCD_filename=os.path.basename(basegcd),
              If=lambda f: filter_globals.EHEAlertFilter in f)
+    
     tray.Add(write_json, extra=extracted, If=lambda f: filter_globals.EHEAlertFilter in f)
+    
     tray.AddModule('I3Writer',
                    'writer',
                    filename=out,
@@ -187,7 +232,7 @@ def i3_to_json(i3s: List[str], extra: str, basegcd: str, out: str, nframes: Opti
 
 def main():
     parser = argparse.ArgumentParser(
-        description='Extract CausalQTot and MJD data from i3 to h5')
+        description="Convert I3 file to JSON realtime format")
 
     parser.add_argument('i3s', nargs='+', help='input i3s')
     parser.add_argument('--basegcd', default='/data/user/followup/baseline_gcds/baseline_gcd_136897.i3',
