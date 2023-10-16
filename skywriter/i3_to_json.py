@@ -2,15 +2,18 @@
 
 import argparse
 import json
+from functools import partial
 import os
 from pathlib import Path
 from typing import List, Optional, Final
 
 from wipac_dev_tools import logging_tools
 
-from . import (  # noqa: F401
-    suppress_warnings,
-)  # temporary workaround for https://github.com/icecube/icetray/issues/3112
+import suppress_warnings
+
+# from . import (  # noqa: F401
+#    suppress_warnings,
+# )  # temporary workaround for https://github.com/icecube/icetray/issues/3112
 
 from icecube.icetray import I3Tray  # type: ignore[import]
 from icecube import (  # type: ignore[import] # noqa: F401
@@ -47,10 +50,12 @@ def get_uid(frame):
 
 
 def alertify(frame):
-    print(f"Alertify {frame.Stop} frame!")
+    print(f"Alertify {frame.Stop} frame.")
 
     if "SplitUncleanedInIcePulses" not in frame:
-        print("SplitUncleanedInIcePulses is not in frame. Skipping frame.")
+        print(
+            "SplitUncleanedInIcePulses is not in pending frame. Skipping what is likely the original P-frame."
+        )
         return False
 
     if isinstance(
@@ -66,49 +71,64 @@ def alertify(frame):
         )
 
 
-def fill_missing_keys(frame):
-    print(f"Filling missing keys for {frame.Stop} frame!")
+def fill_key(frame, source_pframe, key, default_value) -> None:
+    if key in frame:
+        print(f"Key {key} already in frame. Skipping.")
+    elif key in source_pframe:
+        print(f"Copying key {key} from source P-frame.")
+        frame[key] = source_pframe[key]
+    else:
+        print(f"Setting {key} to dummy value.")
+        frame[key] = default_value
 
-    if filter_globals.EHEAlertFilter not in frame:
-        frame[filter_globals.EHEAlertFilter] = icetray.I3Bool(True)
-    if "OnlineL2_SplineMPE" not in frame:
-        print("Adding dummy OnlineL2_SplineMPE keys")
-        frame["OnlineL2_SplineMPE"] = dataclasses.I3Particle()
-        frame["OnlineL2_SplineMPE_CramerRao_cr_zenith"] = dataclasses.I3Double(0)
-        frame["OnlineL2_SplineMPE_CramerRao_cr_azimuth"] = dataclasses.I3Double(0)
-        frame["OnlineL2_SplineMPE_MuE"] = dataclasses.I3Particle()
-        frame["OnlineL2_SplineMPE_MuE"].energy = 0
-        frame["OnlineL2_SplineMPE_MuEx"] = dataclasses.I3Particle()
-        frame["OnlineL2_SplineMPE_MuEx"].energy = 0
-    if "IceTop_SLC_InTime" not in frame:
-        print("Adding dummy IceTop_SLC_InTime keys")
-        frame["IceTop_SLC_InTime"] = icetray.I3Bool(False)
 
-    if "IceTop_HLC_InTime" not in frame:
-        print("Adding dummy IceTop_HLC_InTime keys")
-        frame["IceTop_HLC_InTime"] = icetray.I3Bool(False)
+def fill_missing_keys(frame, source_pframes):
+    print(f"Filling missing keys for {frame.Stop} frame.")
 
-    if "OnlineL2_SPE2itFit" not in frame:
-        print("Adding dummy OnlineL2_SPE2itFit keys")
-        frame["OnlineL2_SPE2itFit"] = dataclasses.I3Particle()
-        frame["OnlineL2_SPE2itFitFitParams"] = gulliver.I3LogLikelihoodFitParams()
+    uid = get_uid(frame)
+    pframe = source_pframes[uid]
 
-    if "OnlineL2_BestFit" not in frame:
-        print("Adding dummy OnlineL2_BestFit keys")
-        frame["OnlineL2_BestFit"] = dataclasses.I3Particle()
-        frame["OnlineL2_BestFit_Name"] = dataclasses.I3String("hi")
-        frame["OnlineL2_BestFitFitParams"] = gulliver.I3LogLikelihoodFitParams()
-        frame["OnlineL2_BestFit_CramerRao_cr_zenith"] = dataclasses.I3Double(0)
-        frame["OnlineL2_BestFit_CramerRao_cr_azimuth"] = dataclasses.I3Double(0)
-        frame["OnlineL2_BestFit_MuEx"] = dataclasses.I3Particle()
-        frame["OnlineL2_BestFit_MuEx"].energy = 0
+    process_key = partial(fill_key, frame, pframe)
 
-    if "PoleEHEOpheliaParticle_ImpLF" not in frame:
-        print("Adding dummy PoleEHEOpheliaParticle_ImpLF keys")
-        frame["PoleEHEOpheliaParticle_ImpLF"] = dataclasses.I3Particle()
-    if "PoleEHESummaryPulseInfo" not in frame:
-        print("Adding dummy PoleEHESummaryPulseInfo keys")
-        frame["PoleEHESummaryPulseInfo"] = recclasses.I3PortiaEvent()
+    # EHEAlertFilter key
+    process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
+
+    # OnlineL2 recos
+    for key in [
+        "OnlineL2_SplineMPE",
+        "OnlineL2_SPE2itFit",
+        "OnlineL2_BestFit",
+        "PoleEHEOpheliaParticle_ImpLF",
+    ]:
+        process_key(key, dataclasses.I3Particle())
+
+    for key in [
+        "OnlineL2_SplineMPE_CramerRao_cr_zenith",
+        "OnlineL2_SplineMPE_CramerRao_cr_azimuth",
+        "OnlineL2_BestFit_CramerRao_cr_zenith",
+        "OnlineL2_BestFit_CramerRao_cr_azimuth",
+    ]:
+        process_key(key, dataclasses.I3Double(0))
+
+    for key in [
+        "OnlineL2_SplineMPE_MuE",
+        "OnlineL2_SplineMPE_MuEx",
+        "OnlineL2_BestFit_MuEx",
+    ]:
+        dummy_particle = dataclasses.I3Particle()
+        dummy_particle.energy = 0
+        process_key(key, dummy_particle)
+
+    for key in ["OnlineL2_SPE2itFitFitParams", "OnlineL2_BestFitFitParams"]:
+        process_key(key, gulliver.I3LogLikelihoodFitParams())
+
+    process_key("OnlineL2_BestFit_Name", dataclasses.I3String("dummy"))
+
+    process_key("PoleEHESummaryPulseInfo", recclasses.I3PortiaEvent())
+
+    # IceTop keyset
+    for key in ["IceTop_SLC_InTime", "IceTop_HLC_InTime"]:
+        process_key(key, icetray.I3Bool(False))
 
 
 def restore_content(frame, src, keys):
@@ -267,7 +287,6 @@ def extract_pframe(i3files):
 
 def i3_to_json(
     i3s: List[str],
-    pkeys: List[str],
     extra: List[str],
     basegcd: str,
     output_dir: Path,
@@ -298,9 +317,7 @@ def i3_to_json(
 
     tray.Add(alertify)
 
-    tray.Add(restore_content, src=pframes, keys=pkeys)
-
-    tray.Add(fill_missing_keys)
+    tray.Add(fill_missing_keys, source_pframes=pframes)
 
     # Why the if `filter_globals.EHEAlertFilter`?
     # This is always written out by fill_missing_keys.
@@ -319,13 +336,13 @@ def i3_to_json(
         If=lambda f: filter_globals.EHEAlertFilter in f,
     )
 
-    tray.AddModule(
-        "I3Writer",
-        "writer",
-        filename=out,
-        streams=[icetray.I3Frame.Physics, icetray.I3Frame.DAQ],
-        If=out != "",  # can we live without a writer module?
-    )
+    if out != "":
+        tray.AddModule(
+            "I3Writer",
+            "writer",
+            filename=out,
+            streams=[icetray.I3Frame.Physics, icetray.I3Frame.DAQ],
+        )
 
     if nframes is None:
         tray.Execute()
@@ -356,12 +373,12 @@ def main():
         help="extra I3Particles to pull out from original i3 file",
     )
 
-    parser.add_argument(
-        "--pkeys",
-        action="append",
-        default=[],
-        help="Physics keys to preserve from original P frame",
-    )
+    # parser.add_argument(
+    #    "--pkeys",
+    #    action="append",
+    #    default=[],
+    #    help="Physics keys to preserve from original P frame",
+    # )
 
     parser.add_argument("-o", "--out", default="", help="output I3 file")
     args = parser.parse_args()
@@ -370,7 +387,6 @@ def main():
 
     i3_to_json(
         i3s=args.i3s,
-        pkeys=args.pkeys,
         extra=args.extra,
         basegcd=args.basegcd,
         output_dir=Path("."),
