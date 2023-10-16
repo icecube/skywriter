@@ -1,7 +1,6 @@
 """Helper script to extract CausalQTot and MJD data from i3 to h5."""
 
 import argparse
-import copy
 import json
 import os
 from pathlib import Path
@@ -9,15 +8,12 @@ from typing import List, Optional, Final
 
 from wipac_dev_tools import logging_tools
 
-# temporary workaround for https://github.com/icecube/icetray/issues/3112
-import warnings
-
-warnings.filterwarnings(
-    "ignore", ".*already registered; second conversion method ignored.", RuntimeWarning
-)
+from . import (  # noqa: F401
+    suppress_warnings,
+)  # temporary workaround for https://github.com/icecube/icetray/issues/3112
 
 from icecube.icetray import I3Tray  # type: ignore[import]
-from icecube import (  # type: ignore[import]
+from icecube import (  # type: ignore[import] # noqa: F401
     MuonGun,
     VHESelfVeto,
     astro,
@@ -28,7 +24,7 @@ from icecube import (  # type: ignore[import]
     simclasses,
     trigger_splitter,
 )
-from icecube.filterscripts import (  # type: ignore[import]
+from icecube.filterscripts import (  # noqa: # type: ignore[import]
     alerteventfollowup,
     filter_globals,
 )
@@ -144,6 +140,7 @@ def restore_content(frame, src, keys):
         # but right now "alertify" creates dummy keys before this module is run.
         # We should likely split out the filling with empty keys from alertify.
         print(f"Copying key {key}")
+        # This should work as long as it is read-only.
         frame[key] = pframe[key]
 
 
