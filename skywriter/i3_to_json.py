@@ -9,11 +9,8 @@ from typing import List, Optional, Final
 
 from wipac_dev_tools import logging_tools
 
-import suppress_warnings
-
-# from . import (  # noqa: F401
-#    suppress_warnings,
-# )  # temporary workaround for https://github.com/icecube/icetray/issues/3112
+# temporary workaround for https://github.com/icecube/icetray/issues/3112
+import suppress_warnings  # type: ignore[import] # noqa: F401
 
 from icecube.icetray import I3Tray  # type: ignore[import]
 from icecube import (  # type: ignore[import] # noqa: F401
@@ -83,6 +80,9 @@ def fill_key(frame, source_pframe, key, default_value) -> None:
 
 
 def fill_missing_keys(frame, source_pframes):
+    """The realtime code to generate the JSON event expects a certain set of keys in the source frame.
+    Keys are copied from the original pframe (if one is available for the pending event and if it has the pending key), otherwise they are set to dummy values.
+    """
     print(f"Filling missing keys for {frame.Stop} frame.")
 
     uid = get_uid(frame)
@@ -90,10 +90,8 @@ def fill_missing_keys(frame, source_pframes):
 
     process_key = partial(fill_key, frame, pframe)
 
-    # EHEAlertFilter key
     process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
 
-    # OnlineL2 recos
     for key in [
         "OnlineL2_SplineMPE",
         "OnlineL2_SPE2itFit",
@@ -126,7 +124,6 @@ def fill_missing_keys(frame, source_pframes):
 
     process_key("PoleEHESummaryPulseInfo", recclasses.I3PortiaEvent())
 
-    # IceTop keyset
     for key in ["IceTop_SLC_InTime", "IceTop_HLC_InTime"]:
         process_key(key, icetray.I3Bool(False))
 
