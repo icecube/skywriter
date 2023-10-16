@@ -10,7 +10,7 @@ from typing import List, Optional, Final
 from wipac_dev_tools import logging_tools
 
 # temporary workaround for https://github.com/icecube/icetray/issues/3112
-import suppress_warnings  # type: ignore[import] # noqa: F401
+from . import suppress_warnings  # type: ignore[import] # noqa: F401
 
 from icecube.icetray import I3Tray  # type: ignore[import]
 from icecube import (  # type: ignore[import] # noqa: F401
