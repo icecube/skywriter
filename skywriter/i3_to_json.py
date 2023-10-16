@@ -24,7 +24,7 @@ from icecube import (  # type: ignore[import] # noqa: F401
     simclasses,
     trigger_splitter,
 )
-from icecube.filterscripts import (  # noqa: # type: ignore[import]
+from icecube.filterscripts import (  # type: ignore[import]
     alerteventfollowup,
     filter_globals,
 )
