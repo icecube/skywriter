@@ -161,7 +161,7 @@ def restore_content(frame, src, keys):
         frame[key] = pframe[key]
 
 
-def write_json(frame, extra, output_dir: Path):
+def write_json(frame, extra, output_dir: Path, filenames: List):
     pnf = frame_packet_to_i3live_json(
         i3live_json_to_frame_packet(
             frame[filter_globals.alert_candidate_full_message].value, pnf_framing=False
@@ -238,6 +238,7 @@ def write_json(frame, extra, output_dir: Path):
     with open(output_dir / jf, "w") as f:
         json.dump(fullmsg, f)
         print(f"Wrote {jf} to directory {output_dir}")
+        filenames.append(jf)
 
 
 def extract_original(i3files, orig_keys: List[str]):
@@ -292,6 +293,8 @@ def i3_to_json(
 ) -> None:
     """Convert I3 file to JSON realtime format"""
 
+    filenames = []
+
     extracted = extract_original(i3files=i3s, orig_keys=extra)
 
     pframes = extract_pframe(i3files=i3s)
@@ -330,6 +333,7 @@ def i3_to_json(
         write_json,
         extra=extracted,
         output_dir=output_dir,
+        filenames=filenames,
         If=lambda f: filter_globals.EHEAlertFilter in f,
     )
 
@@ -346,6 +350,8 @@ def i3_to_json(
     else:
         tray.Execute(nframes)
     tray.Finish()
+
+    return filenames
 
 
 def main():
