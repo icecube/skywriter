@@ -271,12 +271,12 @@ def extract_pframe(i3files):
 def i3_to_json(
     i3s: List[str],
     pkeys: List[str],
-    extra: str,
+    extra: List[str],
     basegcd: str,
     output_dir: Path,
     out: str,
     nframes: Optional[int],
-) -> str:
+) -> None:
     """Convert I3 file to JSON realtime format"""
 
     extracted = extract_original(i3files=i3s, orig_keys=extra)
@@ -376,7 +376,7 @@ def main():
         pkeys=args.pkeys,
         extra=args.extra,
         basegcd=args.basegcd,
-        output_dir=Path(".")
+        output_dir=Path("."),
         out=args.out,
         nframes=args.nframes,
     )
