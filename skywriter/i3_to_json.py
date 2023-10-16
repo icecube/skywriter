@@ -290,10 +290,10 @@ def i3_to_json(
     output_dir: Path,
     out: str,
     nframes: Optional[int],
-) -> None:
+) -> List[str]:
     """Convert I3 file to JSON realtime format"""
 
-    filenames = []
+    filenames: List[str] = []
 
     extracted = extract_original(i3files=i3s, orig_keys=extra)
 
