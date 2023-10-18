@@ -82,6 +82,28 @@ jobs:
           pytest -vvv tests/unit
           EOF
 
+  function-tests:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v3
+      - uses: actions/setup-python@v3
+        with:
+          python-version: ${{ matrix.py3 }}
+      - name: pip setup
+        run: |
+          pip install --upgrade pip wheel setuptools pytest
+          pip install .[tests]
+      - name: test
+        run: |
+          wget --user=icecube --password=${{secrets.ICECUBE_PASSWORD}} https://convey.icecube.wisc.edu/data/ana/realtime/alert_catalog_v2/input_files/Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3.zst
+          /usr/local/icetray/env-shell.sh << EOF
+          python skywriter/i3_to_json.py ./Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3.zst
+          EOF
+
   release:
     # only run on main/master/default
     if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref
