@@ -3,6 +3,7 @@
 import argparse
 import json
 from functools import partial
+import logging
 import os
 from pathlib import Path
 from typing import List, Optional, Final
@@ -33,6 +34,9 @@ from icecube.full_event_followup import (  # type: ignore[import]
     i3live_json_to_frame_packet,
 )
 
+
+LOGGER = logging.getLogger("skywriter")
+
 # Activate to dump I3 logging.
 # icetray.logging.console()
 
@@ -47,10 +51,10 @@ def get_uid(frame):
 
 
 def alertify(frame):
-    print(f"Alertify {frame.Stop} frame.")
+    LOGGER.info(f"Alertify {frame.Stop} frame.")
 
     if "SplitUncleanedInIcePulses" not in frame:
-        print(
+        LOGGER.info(
             "SplitUncleanedInIcePulses is not in pending frame. Skipping what is likely the original P-frame."
         )
         return False
@@ -58,7 +62,7 @@ def alertify(frame):
     if isinstance(
         frame["I3SuperDST"], dataclasses.I3RecoPulseSeriesMapApplySPECorrection
     ):
-        print(
+        LOGGER.info(
             "It seems like I3SuperDST is an instance of I3RecoPulseSeriesMapApplySPECorrection... converting to I3SuperDST"
         )
         frame["I3SuperDST_tmp"] = frame["I3SuperDST"]
@@ -70,12 +74,12 @@ def alertify(frame):
 
 def fill_key(frame, source_pframe, key, default_value) -> None:
     if key in frame:
-        print(f"Key {key} already in frame. Skipping.")
+        LOGGER.debug(f"Key {key} already in frame. Skipping.")
     elif key in source_pframe:
-        print(f"Copying key {key} from source P-frame.")
+        LOGGER.debug(f"Copying key {key} from source P-frame.")
         frame[key] = source_pframe[key]
     else:
-        print(f"Setting {key} to dummy value.")
+        LOGGER.debug(f"Setting {key} to dummy value.")
         frame[key] = default_value
 
 
@@ -83,7 +87,7 @@ def fill_missing_keys(frame, source_pframes):
     """The realtime code to generate the JSON event expects a certain set of keys in the source frame.
     Keys are copied from the original pframe (if one is available for the pending event and if it has the pending key), otherwise they are set to dummy values.
     """
-    print(f"Filling missing keys for {frame.Stop} frame.")
+    LOGGER.info(f"Filling missing keys for {frame.Stop} frame.")
 
     uid = get_uid(frame)
     pframe = source_pframes[uid]
@@ -156,7 +160,7 @@ def restore_content(frame, src, keys):
         #   print(f"Key {key} is already in frame, skipping")
         # but right now "alertify" creates dummy keys before this module is run.
         # We should likely split out the filling with empty keys from alertify.
-        print(f"Copying key {key}")
+        LOGGER.debug(f"Copying key {key}")
         # This should work as long as it is read-only.
         frame[key] = pframe[key]
 
@@ -194,7 +198,7 @@ def write_json(frame, extra, output_dir: Path, filenames: List):
                 "dec": dec.item(),
             }
     except KeyError as e:
-        print(
+        LOGGER.warning(
             "Q-frame was split into multiple P-frames, skipping subevents not in input i3 file",
             e,
         )
@@ -237,7 +241,7 @@ def write_json(frame, extra, output_dir: Path, filenames: List):
     jf = f'{fullmsg["unique_id"]}.sub{uid_sub[2]:03}.json'
     with open(output_dir / jf, "w") as f:
         json.dump(fullmsg, f)
-        print(f"Wrote {jf} to directory {output_dir}")
+        LOGGER.info(f"Wrote {jf} to directory {output_dir}")
         filenames.append(jf)
 
 
@@ -251,15 +255,11 @@ def extract_original(i3files, orig_keys: List[str]):
             try:
                 dd[ok] = frame[ok]
             except KeyError as e:
-                print("KeyError:", e, uid)
+                LOGGER.error("KeyError:", e, uid)
         extracted[uid] = dd
-
-    def notify(frame):
-        print(f"Running extract_original on {frame.Stop} frame")
 
     tray = I3Tray()
     tray.Add("I3Reader", Filenamelist=i3files)
-    tray.Add(notify)
     tray.Add(pullout)
     tray.Execute()
 
@@ -278,7 +278,7 @@ def extract_pframe(i3files):
     tray.Add(get_frame)
     tray.Execute()
 
-    print(f"Extracted {len(pframes)} frames.")
+    LOGGER.info(f"Extracted {len(pframes)} frames.")
 
     return pframes
 
