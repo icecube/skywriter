@@ -83,6 +83,7 @@ jobs:
           EOF
 
   function-tests:
+    needs: [py-versions]
     runs-on: ubuntu-latest
     strategy:
       fail-fast: false
@@ -107,7 +108,7 @@ jobs:
   release:
     # only run on main/master/default
     if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref
-    needs: [flake8, mypy, py-setup, unit-tests]
+    needs: [flake8, mypy, py-setup, unit-tests, function-tests]
     runs-on: ubuntu-latest
     concurrency: release
     steps:
