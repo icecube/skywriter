@@ -108,6 +108,7 @@ jobs:
       - name: test routine
         run: |
           /usr/local/icetray/env-shell.sh << EOF
+          pip freeze
           python3 skywriter/i3_to_json.py test-file.zst
           EOF
 
