@@ -104,7 +104,7 @@ jobs:
       - name: download test data
         run: |
           wget --user=icecube --password=${{secrets.ICECUBE_PASSWORD}} -O test-file.zst https://convey.icecube.wisc.edu/data/ana/realtime/alert_catalog_v2/input_files/${{ matrix.file }}.zst
-          ls -lrt
+          ls -lrt tests
           shasum -c tests/data/${{ matrix.file }}.sha test-file.zst
       - name: test routine
         run: |
