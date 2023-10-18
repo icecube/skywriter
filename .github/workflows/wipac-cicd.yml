@@ -89,6 +89,8 @@ jobs:
       fail-fast: false
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+    container:
+        image: icecube/icetray:icetray-prod-current-ubuntu22.04
     steps:
       - uses: actions/checkout@v3
       - uses: actions/setup-python@v3
