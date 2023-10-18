@@ -89,6 +89,7 @@ jobs:
       fail-fast: false
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+        file: [Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3]
     container:
         image: icecube/icetray:icetray-prod-current-ubuntu22.04
     steps:
@@ -100,11 +101,14 @@ jobs:
         run: |
           pip install --upgrade pip wheel setuptools pytest
           pip install .[tests]
-      - name: test
+      - name: download test data
         run: |
-          wget --user=icecube --password=${{secrets.ICECUBE_PASSWORD}} https://convey.icecube.wisc.edu/data/ana/realtime/alert_catalog_v2/input_files/Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3.zst
+          wget --user=icecube --password=${{secrets.ICECUBE_PASSWORD}} -O test-file.zst https://convey.icecube.wisc.edu/data/ana/realtime/alert_catalog_v2/input_files/${{ matrix.file }}.zst
+          shasum -c ./tests/data/${{ matrix.file }}.sha test-file.zst
+      - name: test routine
+        run: |
           /usr/local/icetray/env-shell.sh << EOF
-          python skywriter/i3_to_json.py ./Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3.zst
+          python skywriter/i3_to_json.py test-file.zst
           EOF
 
   release:
