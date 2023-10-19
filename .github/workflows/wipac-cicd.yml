@@ -110,7 +110,7 @@ jobs:
           /usr/local/icetray/env-shell.sh << EOF
           pip install --upgrade pip wheel setuptools pytest
           pip install .[tests]
-          python3 skywriter/i3_to_json.py test-file.zst
+          python3 skywriter/i3_to_json.py --basegcd /opt/i3-data/baseline_gcds/baseline_gcd_136897.i3 test-file.zst
           EOF
   release:
     # only run on main/master/default
