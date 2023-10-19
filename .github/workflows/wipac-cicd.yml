@@ -93,14 +93,14 @@ jobs:
     container:
         image: icecube/icetray:icetray-prod-current-ubuntu22.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-        with:
-          python-version: ${{ matrix.py3 }}
-      - name: pip setup
-        run: |
-          pip install --upgrade pip wheel setuptools pytest
-          pip install .[tests]
+      # - uses: actions/checkout@v3
+      # - uses: actions/setup-python@v3
+      #  with:
+      #    python-version: ${{ matrix.py3 }}
+      # - name: pip setup
+      #  run: |
+      #    pip install --upgrade pip wheel setuptools pytest
+      #    pip install .[tests]
       - name: download test data
         run: |
           wget --user=icecube --password=${{secrets.ICECUBE_PASSWORD}} -O test-file.zst https://convey.icecube.wisc.edu/data/ana/realtime/alert_catalog_v2/input_files/${{ matrix.file }}.zst
@@ -108,9 +108,10 @@ jobs:
       - name: test routine
         run: |
           /usr/local/icetray/env-shell.sh << EOF
-          pip freeze
+          pip install --upgrade pip wheel setuptools pytest
+          pip install .[tests]
+          python3 skywriter/i3_to_json.py test-file.zst
           EOF
-        # python3 skywriter/i3_to_json.py test-file.zst
   release:
     # only run on main/master/default
     if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref
