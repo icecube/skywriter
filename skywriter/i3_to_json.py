@@ -380,13 +380,6 @@ def main():
         help="extra I3Particles to pull out from original i3 file",
     )
 
-    # parser.add_argument(
-    #    "--pkeys",
-    #    action="append",
-    #    default=[],
-    #    help="Physics keys to preserve from original P frame",
-    # )
-
     parser.add_argument("-o", "--out", default="", help="output I3 file")
     args = parser.parse_args()
 
