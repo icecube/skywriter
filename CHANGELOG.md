@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.0.5 (2023-10-19)
+
+### Other
+
+* Recover keys from original P-frames in `i3_to_json.py` ([#7](https://github.com/icecube/skywriter/issues/7)) ([`cb8137a`](https://github.com/icecube/skywriter/commit/cb8137afff7e6adb35060b8bdfddc5d7d754bde9))
+
 ## v0.0.4 (2023-10-16)
 
 ### Other
