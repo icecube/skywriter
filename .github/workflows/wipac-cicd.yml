@@ -82,10 +82,40 @@ jobs:
           pytest -vvv tests/unit
           EOF
 
+  function-tests:
+    needs: [py-versions]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+        file: [Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3]
+    container:
+        image: icecube/icetray:icetray-prod-current-ubuntu22.04
+    steps:
+      - uses: actions/checkout@v3
+      # - uses: actions/setup-python@v3
+      #  with:
+      #    python-version: ${{ matrix.py3 }}
+      # - name: pip setup
+      #  run: |
+      #    pip install --upgrade pip wheel setuptools pytest
+      #    pip install .[tests]
+      - name: download test data
+        run: |
+          wget --user=icecube --password=${{secrets.ICECUBE_PASSWORD}} -O test-file.zst https://convey.icecube.wisc.edu/data/ana/realtime/alert_catalog_v2/input_files/${{ matrix.file }}.zst
+          shasum -c tests/data/${{ matrix.file }}.sha
+      - name: test routine
+        run: |
+          /usr/local/icetray/env-shell.sh << EOF
+          pip install --upgrade pip wheel setuptools pytest
+          pip install .[tests]
+          python3 skywriter/i3_to_json.py --basegcd /opt/i3-data/baseline_gcds/baseline_gcd_136897.i3 test-file.zst
+          EOF
   release:
     # only run on main/master/default
     if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref
-    needs: [flake8, mypy, py-setup, unit-tests]
+    needs: [flake8, mypy, py-setup, unit-tests, function-tests]
     runs-on: ubuntu-latest
     concurrency: release
     steps:
