@@ -3,15 +3,17 @@
 import argparse
 import json
 from functools import partial
-import logging
+
 import os
 from pathlib import Path
 from typing import List, Optional, Final
 
+# temporary workaround for https://github.com/icecube/icetray/issues/3112
+# from skywriter import suppress_warnings  # type: ignore[import] # noqa: F401
+
+from skywriter.logging_utils import LOGGER
 from wipac_dev_tools import logging_tools
 
-# temporary workaround for https://github.com/icecube/icetray/issues/3112
-from skywriter import suppress_warnings  # type: ignore[import] # noqa: F401
 
 # try old-style import for CI
 from icecube.icetray import I3Tray  # type: ignore[import]
@@ -39,10 +41,7 @@ from icecube.full_event_followup import (  # type: ignore[import]
     i3live_json_to_frame_packet,
 )
 
-
-LOGGER = logging.getLogger("skywriter")
-
-# Activate to dump I3 logging.
+# Activate to dump C++ I3 logging to console output.
 # icetray.logging.console()
 
 
@@ -56,11 +55,14 @@ def get_uid(frame):
 
 
 def alertify(frame):
-    LOGGER.info(f"Alertify {frame.Stop} frame.")
+    uid = get_uid(frame)
 
+    LOGGER.info(f"{uid} - Alertify pending {frame.Stop} frame...")
+
+    # We should make sure that we do not write the same event twice.
     if "SplitUncleanedInIcePulses" not in frame:
         LOGGER.info(
-            "SplitUncleanedInIcePulses is not in pending frame. Skipping what is likely the original P-frame."
+            f"{uid} - SplitUncleanedInIcePulses is not in pending frame. Skipping what is likely the original P-frame."
         )
         return False
 
@@ -68,13 +70,15 @@ def alertify(frame):
         frame["I3SuperDST"], dataclasses.I3RecoPulseSeriesMapApplySPECorrection
     ):
         LOGGER.info(
-            "It seems like I3SuperDST is an instance of I3RecoPulseSeriesMapApplySPECorrection... converting to I3SuperDST"
+            f"{uid} - It seems like I3SuperDST is an instance of I3RecoPulseSeriesMapApplySPECorrection... converting to I3SuperDST."
         )
         frame["I3SuperDST_tmp"] = frame["I3SuperDST"]
         del frame["I3SuperDST"]
         frame["I3SuperDST"] = dataclasses.I3SuperDST(
             dataclasses.I3RecoPulseSeriesMap.from_frame(frame, "I3SuperDST_tmp")
         )
+
+    LOGGER.info(f"{uid} - Alertify done.")
 
 
 def fill_key(frame, source_pframe, key, default_value) -> None:
@@ -92,9 +96,16 @@ def fill_missing_keys(frame, source_pframes):
     """The realtime code to generate the JSON event expects a certain set of keys in the source frame.
     Keys are copied from the original pframe (if one is available for the pending event and if it has the pending key), otherwise they are set to dummy values.
     """
-    LOGGER.info(f"Filling missing keys for {frame.Stop} frame.")
-
     uid = get_uid(frame)
+
+    LOGGER.info(f"{uid} - Filling missing keys for {frame.Stop} frame.")
+
+    if uid not in source_pframes:
+        LOGGER.warning(
+            "Q-frame was split into multiple P-frames, skipping subevents not in input i3 file."
+        )
+        return
+
     pframe = source_pframes[uid]
 
     process_key = partial(fill_key, frame, pframe)
@@ -170,7 +181,11 @@ def restore_content(frame, src, keys):
         frame[key] = pframe[key]
 
 
-def write_json(frame, extra, output_dir: Path, filenames: List):
+def write_json(frame, pframes, extra_particles, output_dir: Path, filenames: List):
+    uid = get_uid(frame)
+
+    LOGGER.info(f"{uid} - Writing JSON file...")
+
     pnf = frame_packet_to_i3live_json(
         i3live_json_to_frame_packet(
             frame[filter_globals.alert_candidate_full_message].value, pnf_framing=False
@@ -184,38 +199,32 @@ def write_json(frame, extra, output_dir: Path, filenames: List):
         for (key, value) in (list(msg.items()) + list(pnfmsg.items()))
         if key != "frames"
     }
-    extra_namer = {"OnlineL2_SplineMPE": "ol2_mpe"}
-    try:
-        uid_sub = (
-            fullmsg["run_id"],
-            fullmsg["event_id"],
-            frame["I3EventHeader"].sub_event_id,
-        )
-        for i3part_key in extra[uid_sub]:
-            part = extra[uid_sub][i3part_key]
-            ra, dec = astro.dir_to_equa(
-                part.dir.zenith,
-                part.dir.azimuth,
-                frame["I3EventHeader"].start_time.mod_julian_day_double,
-            )
-            fullmsg[extra_namer.get(i3part_key, i3part_key)] = {
-                "ra": ra.item(),
-                "dec": dec.item(),
-            }
-    except KeyError as e:
-        LOGGER.warning(
-            "Q-frame was split into multiple P-frames, skipping subevents not in input i3 file",
-            e,
-        )
-        return False
 
+    # The following logic allows to add the coordinates of additional I3Particles
+    # to the JSON output.
+    event_time_mjd = frame["I3EventHeader"].start_time.mod_julian_day_double
+    extra_namer = {"OnlineL2_SplineMPE": "ol2_mpe"}
+
+    for i3particle_key in extra_particles:
+        particle = pframes[uid][i3particle_key]
+        ra, dec = astro.dir_to_equa(
+            particle.dir.zenith,
+            particle.dir.azimuth,
+            event_time_mjd,
+        )
+        fullmsg[extra_namer.get(i3particle_key, i3particle_key)] = {
+            "ra": ra.item(),
+            "dec": dec.item(),
+        }
+
+    # The following logic allows to extract the MC truth.
     if "I3MCTree" in frame:
         prim = dataclasses.get_most_energetic_inice(frame["I3MCTree"])
         muhi = dataclasses.get_most_energetic_muon(frame["I3MCTree"])
         ra, dec = astro.dir_to_equa(
             prim.dir.zenith,
             prim.dir.azimuth,
-            frame["I3EventHeader"].start_time.mod_julian_day_double,
+            event_time_mjd,
         )
 
         fullmsg["true"] = {"ra": ra.item(), "dec": dec.item(), "eprim": prim.energy}
@@ -243,47 +252,25 @@ def write_json(frame, extra, output_dir: Path, filenames: List):
                     edep += e0 - e1
         fullmsg["true"]["emuin"] = edep
 
-    jf = f'{fullmsg["unique_id"]}.sub{uid_sub[2]:03}.json'
+    jf = f'{fullmsg["unique_id"]}.sub{uid[2]:03}.json'
     with open(output_dir / jf, "w") as f:
         json.dump(fullmsg, f)
-        LOGGER.info(f"Wrote {jf} to directory {output_dir}")
+        LOGGER.info(f"Wrote {jf} to directory `{output_dir}`")
         filenames.append(jf)
 
 
-def extract_original(i3files, orig_keys: List[str]):
-    extracted = {}
-
-    def pullout(frame):
-        uid = get_uid(frame=frame)
-        dd = {}
-        for ok in orig_keys:
-            try:
-                dd[ok] = frame[ok]
-            except KeyError as e:
-                LOGGER.error("KeyError:", e, uid)
-        extracted[uid] = dd
-
-    tray = I3Tray()
-    tray.Add("I3Reader", Filenamelist=i3files)
-    tray.Add(pullout)
-    tray.Execute()
-
-    return extracted
-
-
 def extract_pframe(i3files):
-    pframes = {}
+    pframes: dict = {}
 
     def get_frame(frame):
         uid = get_uid(frame)
+        LOGGER.info(f"Extracting event {uid}")
         pframes[uid] = frame
 
     tray = I3Tray()
     tray.Add("I3Reader", Filenamelist=i3files)
     tray.Add(get_frame)
     tray.Execute()
-
-    LOGGER.info(f"Extracted {len(pframes)} frames.")
 
     return pframes
 
@@ -300,13 +287,15 @@ def i3_to_json(
 
     filenames: List[str] = []
 
-    extracted = extract_original(i3files=i3s, orig_keys=extra)
-
     pframes = extract_pframe(i3files=i3s)
+
+    LOGGER.info(f"Extracted {len(pframes)} P-frames from input file.")
 
     tray = I3Tray()
     tray.Add("I3Reader", Filenamelist=i3s)
 
+    # Delete SplitUncleanedInIcePulses, if present, and (re)create it
+    # by running the trigger splitter module.
     tray.Add(
         "Delete",
         Keys=["SplitUncleanedInIcePulses", "SplitUncleanedInIcePulsesTimeRange"],
@@ -320,12 +309,15 @@ def i3_to_json(
         OutputResponses=["SplitUncleanedInIcePulses"],
     )
 
+    # Converts I3SuperDST to the proper format.
     tray.Add(alertify)
 
+    # Retrieves the keys from the original P frame.
     tray.Add(fill_missing_keys, source_pframes=pframes)
 
     # Why the if `filter_globals.EHEAlertFilter`?
-    # This is always written out by fill_missing_keys.
+    # Only run on frames where fill_missing_keys was successful.
+    # This corresponds to the P matching "uid" in the original I3 file.
 
     tray.Add(
         alerteventfollowup.AlertEventFollowup,
@@ -336,10 +328,10 @@ def i3_to_json(
 
     tray.Add(
         write_json,
-        extra=extracted,
+        extra_keys=extra,
         output_dir=output_dir,
         filenames=filenames,
-        If=lambda f: filter_globals.EHEAlertFilter in f,
+        If=lambda f: (get_uid(f) in pframes) and (filter_globals.EHEAlertFilter in f),
     )
 
     if out != "":
@@ -384,7 +376,7 @@ def main():
     parser.add_argument("-o", "--out", default="", help="output I3 file")
     args = parser.parse_args()
 
-    logging_tools.log_argparse_args(args)
+    logging_tools.log_argparse_args(args, logger=LOGGER, level="DEBUG")
 
     i3_to_json(
         i3s=args.i3s,
