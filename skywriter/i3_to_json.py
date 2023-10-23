@@ -59,7 +59,8 @@ def alertify(frame):
 
     LOGGER.info(f"{uid} - Alertify pending {frame.Stop} frame...")
 
-    # We should make sure that we do not write the same event twice.
+    # Since "SplitUncleanedInIcePulses" is always deleted in the tray
+    # the original P-frame will be skipped.
     if "SplitUncleanedInIcePulses" not in frame:
         LOGGER.info(
             f"{uid} - SplitUncleanedInIcePulses is not in pending frame. Skipping what is likely the original P-frame."
@@ -99,12 +100,6 @@ def fill_missing_keys(frame, source_pframes):
     uid = get_uid(frame)
 
     LOGGER.info(f"{uid} - Filling missing keys for {frame.Stop} frame.")
-
-    if uid not in source_pframes:
-        LOGGER.warning(
-            "Q-frame was split into multiple P-frames, skipping subevents not in input i3 file."
-        )
-        return
 
     pframe = source_pframes[uid]
 
