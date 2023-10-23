@@ -255,11 +255,11 @@ def write_json(frame, pframes, extra_particles, output_dir: Path, filenames: Lis
     jf = f'{fullmsg["unique_id"]}.sub{uid[2]:03}.json'
     with open(output_dir / jf, "w") as f:
         json.dump(fullmsg, f)
-        LOGGER.info(f"Wrote {jf} to directory `{output_dir}`")
+        LOGGER.info(f"{uid} - Wrote {jf} to directory `{output_dir}`")
         filenames.append(jf)
 
 
-def extract_pframe(i3files):
+def extract_pframes(i3files):
     pframes: dict = {}
 
     def get_frame(frame):
@@ -287,7 +287,7 @@ def i3_to_json(
 
     filenames: List[str] = []
 
-    pframes = extract_pframe(i3files=i3s)
+    pframes = extract_pframes(i3files=i3s)
 
     LOGGER.info(f"Extracted {len(pframes)} P-frames from input file.")
 
@@ -310,14 +310,25 @@ def i3_to_json(
     )
 
     # Converts I3SuperDST to the proper format.
-    tray.Add(alertify)
+    tray.Add(alertify, If=lambda f: get_uid(f) in pframes)
 
     # Retrieves the keys from the original P frame.
-    tray.Add(fill_missing_keys, source_pframes=pframes)
+    tray.Add(
+        fill_missing_keys, source_pframes=pframes, If=lambda f: get_uid(f) in pframes
+    )
 
     # Why the if `filter_globals.EHEAlertFilter`?
     # Only run on frames where fill_missing_keys was successful.
     # This corresponds to the P matching "uid" in the original I3 file.
+
+    def notify(frame, pframes):
+        uid = get_uid(frame)
+        if uid in pframes:
+            LOGGER.info(f"{uid} - Running AlertEventFollowup")
+        else:
+            LOGGER.warning(f"{uid} - Skipping sub-event not in original P-frame.")
+
+    tray.Add(notify, "notify-AlertEventFollowup", pframes=pframes)
 
     tray.Add(
         alerteventfollowup.AlertEventFollowup,
@@ -328,10 +339,11 @@ def i3_to_json(
 
     tray.Add(
         write_json,
-        extra_keys=extra,
+        pframes=pframes,
+        extra_particles=extra,
         output_dir=output_dir,
         filenames=filenames,
-        If=lambda f: (get_uid(f) in pframes) and (filter_globals.EHEAlertFilter in f),
+        If=lambda f: filter_globals.EHEAlertFilter in f,
     )
 
     if out != "":
