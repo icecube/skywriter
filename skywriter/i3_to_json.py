@@ -14,8 +14,9 @@ from wipac_dev_tools import logging_tools
 from skywriter import suppress_warnings  # type: ignore[import] # noqa: F401
 
 # try old-style import for CI
-# from icecube.icetray import I3Tray  # type: ignore[import]
-from I3Tray import I3Tray  # type: ignore[import]
+from icecube.icetray import I3Tray  # type: ignore[import]
+
+# from I3Tray import I3Tray  # type: ignore[import]
 
 
 from icecube import (  # type: ignore[import] # noqa: F401
