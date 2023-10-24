@@ -89,9 +89,9 @@ jobs:
       fail-fast: false
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
-        file: [Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3]
+        file: [Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3, Level2pass2_IC86.2013_data_Run00124340_Subrun00000000_00000052_event19400842.i3]
     container:
-        image: icecube/icetray:icetray-prod-current-ubuntu22.04
+        image: icecube/icetray:icetray-prod-current-ubuntu22.04-X64
     steps:
       - uses: actions/checkout@v3
       # - uses: actions/setup-python@v3
@@ -110,7 +110,7 @@ jobs:
           /usr/local/icetray/env-shell.sh << EOF
           pip install --upgrade pip wheel setuptools pytest
           pip install .[tests]
-          python3 skywriter/i3_to_json.py --basegcd /opt/i3-data/baseline_gcds/baseline_gcd_136897.i3 test-file.zst
+          python3 skywriter/i3_to_json.py --extra "OnlineL2_SplineMPE" --extra "OnlineL2_BestFit" --basegcd /opt/i3-data/baseline_gcds/baseline_gcd_136897.i3 test-file.zst
           EOF
   release:
     # only run on main/master/default

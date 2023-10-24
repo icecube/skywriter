@@ -1,10 +1,8 @@
 """Public init."""
 
-from . import i3_to_json
+from . import i3_to_json, logging_utils
 
-__all__ = [
-    "i3_to_json",
-]
+__all__ = ["i3_to_json", "logging_utils"]
 
 # version is a human-readable version number.
 
