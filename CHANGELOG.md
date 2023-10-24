@@ -2,6 +2,12 @@
 
 <!--next-version-placeholder-->
 
+## v0.0.6 (2023-10-24)
+
+### Other
+
+* Improve handling of multiple subevents and particle extraction ([#15](https://github.com/icecube/skywriter/issues/15)) ([`c661db9`](https://github.com/icecube/skywriter/commit/c661db97f64d27803b560cd035413e21ea6f1a70))
+
 ## v0.0.5 (2023-10-19)
 
 ### Other
