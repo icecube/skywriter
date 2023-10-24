@@ -10,7 +10,7 @@ from typing import List, Optional, Final
 
 # temporary workaround for https://github.com/icecube/icetray/issues/3112
 # from skywriter import suppress_warnings  # type: ignore[import] # noqa: F401
-
+import logging
 from skywriter.logging_utils import LOGGER  # type: ignore[import]
 from wipac_dev_tools import logging_tools
 
@@ -396,4 +396,9 @@ def main():
 
 
 if __name__ == "__main__":
+    logging.basicConfig(
+        format="%(asctime)s %(levelname)-8s %(message)s",
+        level=logging.INFO,
+        datefmt="%Y-%m-%d %H:%M:%S",
+    )
     main()
