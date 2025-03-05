@@ -92,8 +92,10 @@ jobs:
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
         file: [Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3, Level2pass2_IC86.2013_data_Run00124340_Subrun00000000_00000052_event19400842.i3]
+        exclude:
+          - py3: 3.8
     container:
-        image: icecube/icetray:icetray-prod-current-ubuntu22.04-X64
+        image: icecube/icetray:icetray-prod-current-ubuntu22.04
     steps:
       - uses: actions/checkout@v3
       # - uses: actions/setup-python@v3
