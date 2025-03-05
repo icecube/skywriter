@@ -74,8 +74,8 @@ jobs:
           python-version: ${{ matrix.py3 }}
       - name: pip setup
         run: |
-          pip install --upgrade pip wheel setuptools pytest
-          pip install --upgrade .[tests]
+          pip install --upgrade pip wheel setuptools pytest packaging
+          pip install .[tests]
       - name: test
         run: |
           /usr/local/icetray/env-shell.sh << EOF
@@ -108,8 +108,8 @@ jobs:
       - name: test routine
         run: |
           /usr/local/icetray/env-shell.sh << EOF
-          pip install --upgrade pip wheel setuptools pytest
-          pip install --upgrade .[tests]
+          pip install --upgrade pip wheel setuptools pytest packaging
+          pip install .[tests]
           python3 skywriter/i3_to_json.py --extra "OnlineL2_SplineMPE" --extra "OnlineL2_BestFit" --basegcd /opt/i3-data/baseline_gcds/baseline_gcd_136897.i3 test-file.zst
           EOF
   release:
