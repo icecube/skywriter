@@ -2,6 +2,13 @@
 
 <!--next-version-placeholder-->
 
+## v0.0.7 (2025-03-05)
+
+### Other
+
+* Fixtests ([#19](https://github.com/icecube/skywriter/issues/19)) ([`bd70f32`](https://github.com/icecube/skywriter/commit/bd70f3217adf78c0d4a3213cd2815f6485551a3d))
+* Bump python max to 3.13 ([#18](https://github.com/icecube/skywriter/issues/18)) ([`7d7068c`](https://github.com/icecube/skywriter/commit/7d7068cc9cc2d2c10b1fee092ae1f7a1d30df6a0))
+
 ## v0.0.6 (2023-10-24)
 
 ### Other
