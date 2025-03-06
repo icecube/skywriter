@@ -97,19 +97,21 @@ def fill_key(frame, source_pframe, key, default_value) -> None:
 
     if key in frame:
         LOGGER.debug(f"Key {key} already in frame. Skipping.")
-    elif alternative_key in frame and alternative_key is not None:
-        LOGGER.debug(f"Renaming {alternative_key} to {key}.")
-        frame[key] = frame[alternative_key]
-        frame.Delete(alternative_key)
+    elif alternative_key is not None:
+        if alternative_key in frame:
+            LOGGER.debug(f"Renaming {alternative_key} to {key}.")
+            frame[key] = frame[alternative_key]
+            frame.Delete(alternative_key)
     elif key in source_pframe:
         LOGGER.debug(f"Copying key {key} from source P-frame.")
         frame[key] = source_pframe[key]
-    elif alternative_key in source_pframe and alternative_key is not None:
-        LOGGER.debug(
-            f"Copying key {alternative_key} from source P-frame"
-            f"and renaming it to {key}."
-        )
-        frame[key] = source_pframe[alternative_key]
+    elif alternative_key is not None:
+        if alternative_key in source_pframe:
+            LOGGER.debug(
+                f"Copying key {alternative_key} from source P-frame"
+                f"and renaming it to {key}."
+            )
+            frame[key] = source_pframe[alternative_key]
     else:
         LOGGER.debug(f"Setting {key} to dummy value.")
         frame[key] = default_value
