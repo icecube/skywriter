@@ -42,6 +42,11 @@ from icecube.full_event_followup import (  # type: ignore[import]
     i3live_json_to_frame_packet,
 )
 
+
+onlinel2_prefix_old = "OnlineL2"
+onlinel2_prefix_new = "l2_online"
+
+
 # Activate to dump C++ I3 logging to console output.
 # icetray.logging.console()
 
@@ -84,14 +89,31 @@ def alertify(frame):
 
 
 def fill_key(frame, source_pframe, key, default_value) -> None:
+
+    alternative_key = None
+    if key.split("_")[:2] == onlinel2_prefix_new:
+        alternative_key = f"{onlinel2_prefix_old}_{key.split("_")[1:]}"
+        print(alternative_key)
+
     if key in frame:
         LOGGER.debug(f"Key {key} already in frame. Skipping.")
+    elif alternative_key in frame and alternative_key is not None:
+        LOGGER.debug(f"Renaming {alternative_key} to {key}.")
+        frame[key] = frame[alternative_key]
+        frame.Delete(alternative_key)
     elif key in source_pframe:
         LOGGER.debug(f"Copying key {key} from source P-frame.")
         frame[key] = source_pframe[key]
+    elif alternative_key in source_pframe and alternative_key is not None:
+        LOGGER.debug(
+            f"Copying key {alternative_key} from source P-frame"
+            f"and renaming it to {key}."
+        )
+        frame[key] = source_pframe[alternative_key]
     else:
         LOGGER.debug(f"Setting {key} to dummy value.")
         frame[key] = default_value
+
 
 
 def fill_missing_keys(frame, source_pframes):
@@ -109,34 +131,36 @@ def fill_missing_keys(frame, source_pframes):
     process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
 
     for key in [
-        "OnlineL2_SplineMPE",
-        "OnlineL2_SPE2itFit",
-        "OnlineL2_BestFit",
+        f"{onlinel2_prefix_new}_SplineMPE",
+        f"{onlinel2_prefix_new}_SPE2itFit",
+        f"{onlinel2_prefix_new}_BestFit",
         "PoleEHEOpheliaParticle_ImpLF",
     ]:
         process_key(key, dataclasses.I3Particle())
 
     for key in [
-        "OnlineL2_SplineMPE_CramerRao_cr_zenith",
-        "OnlineL2_SplineMPE_CramerRao_cr_azimuth",
-        "OnlineL2_BestFit_CramerRao_cr_zenith",
-        "OnlineL2_BestFit_CramerRao_cr_azimuth",
+        f"{onlinel2_prefix_new}_SplineMPE_CramerRao_cr_zenith",
+        f"{onlinel2_prefix_new}_SplineMPE_CramerRao_cr_azimuth",
+        f"{onlinel2_prefix_new}_BestFit_CramerRao_cr_zenith",
+        f"{onlinel2_prefix_new}_BestFit_CramerRao_cr_azimuth",
     ]:
         process_key(key, dataclasses.I3Double(0))
 
     for key in [
-        "OnlineL2_SplineMPE_MuE",
-        "OnlineL2_SplineMPE_MuEx",
-        "OnlineL2_BestFit_MuEx",
+        f"{onlinel2_prefix_new}_SplineMPE_MuE",
+        f"{onlinel2_prefix_new}_SplineMPE_MuEx",
+        f"{onlinel2_prefix_new}_BestFit_MuEx",
     ]:
         dummy_particle = dataclasses.I3Particle()
         dummy_particle.energy = 0
         process_key(key, dummy_particle)
 
-    for key in ["OnlineL2_SPE2itFitFitParams", "OnlineL2_BestFitFitParams"]:
+    for key in [
+        f"{onlinel2_prefix_new}_SPE2itFitFitParams",
+        f"{onlinel2_prefix_new}_BestFitFitParams"]:
         process_key(key, gulliver.I3LogLikelihoodFitParams())
 
-    process_key("OnlineL2_BestFit_Name", dataclasses.I3String("dummy"))
+    process_key(f"{onlinel2_prefix_new}_BestFit_Name", dataclasses.I3String("dummy"))
 
     process_key("PoleEHESummaryPulseInfo", recclasses.I3PortiaEvent())
 
