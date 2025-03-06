@@ -115,7 +115,6 @@ def fill_key(frame, source_pframe, key, default_value) -> None:
         frame[key] = default_value
 
 
-
 def fill_missing_keys(frame, source_pframes):
     """The realtime code to generate the JSON event expects a certain set of keys in the source frame.
     Keys are copied from the original pframe (if one is available for the pending event and if it has the pending key), otherwise they are set to dummy values.
@@ -157,7 +156,8 @@ def fill_missing_keys(frame, source_pframes):
 
     for key in [
         f"{onlinel2_prefix_new}_SPE2itFitFitParams",
-        f"{onlinel2_prefix_new}_BestFitFitParams"]:
+        f"{onlinel2_prefix_new}_BestFitFitParams"
+    ]:
         process_key(key, gulliver.I3LogLikelihoodFitParams())
 
     process_key(f"{onlinel2_prefix_new}_BestFit_Name", dataclasses.I3String("dummy"))
