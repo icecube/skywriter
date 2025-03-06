@@ -92,7 +92,7 @@ def fill_key(frame, source_pframe, key, default_value) -> None:
 
     alternative_key = None
     if key.split("_")[:2] == onlinel2_prefix_new:
-        alternative_key = f"{onlinel2_prefix_old}_{key.split("_")[1:]}"
+        alternative_key = f"{onlinel2_prefix_old}_{key.split('_')[1:]}"
         print(alternative_key)
 
     if key in frame:
