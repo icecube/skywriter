@@ -1,62 +1,97 @@
 name: wipac ci/cd
 
-on: [push]
-
-concurrency:
-  group: ${{ github.workflow }}-${{ github.ref }}
-  # don't cancel on main/master/default
-  cancel-in-progress: ${{ format('refs/heads/{0}', github.event.repository.default_branch) != github.ref }}
-
-env:
-  BOT_NAME: wipacdevbot  # needed to "Allow specified actors to bypass required pull requests" (pushing to main)
-  BOT_EMAIL: developers@icecube.wisc.edu
+on:
+  push:
+    # only on branch pushes
+    branches: [ '**' ]
+    tags-ignore: [ '**' ]
 
 jobs:
-
-  flake8:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-      - uses: WIPACrepo/wipac-dev-flake8-action@v1.0
-
-  mypy:
-    runs-on: ubuntu-latest
-    steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
-      - uses: WIPACrepo/wipac-dev-mypy-action@v1.2
-
-  py-setup:
-    runs-on: ubuntu-latest
-    steps:
-      # dependabot can't access normal secrets
-      #   & don't run non-branch triggers (like tags)
-      - if: |
-          github.actor != 'dependabot[bot]' &&
-          github.ref_type == 'branch'
-        name: checkout (only for non-dependabot non-default branches)
-        uses: actions/checkout@v3
-        with:
-          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-      - if: |
-          github.actor != 'dependabot[bot]' &&
-          github.ref_type == 'branch'
-        name: wipac-dev-py-setup-action (only for non-dependabot non-default branches)
-        uses: WIPACrepo/wipac-dev-py-setup-action@v1.14
-        with:
-          base-keywords: IceCube
-          git_committer_name: ${{ env.BOT_NAME }}
-          git_committer_email: ${{ env.BOT_EMAIL }}
 
   py-versions:
     runs-on: ubuntu-latest
     outputs:
       matrix: ${{ steps.versions.outputs.matrix }}
     steps:
-      - uses: actions/checkout@v3
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
       - id: versions
-        uses: WIPACrepo/wipac-dev-py-versions-action@v2.0
+        uses: WIPACrepo/wipac-dev-py-versions-action@v2.7
+
+
+  ############################################################################
+  # LINTERS
+  #############################################################################
+
+  flake8:
+    needs: [ py-versions ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py3 }}
+      - uses: WIPACrepo/wipac-dev-flake8-action@v1.3
+        with:
+          max-complexity: 10  # ideal is ~10-15
+
+  mypy:
+    needs: [ py-versions ]
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: actions/setup-python@v5
+        with:
+          python-version: ${{ matrix.py3 }}
+      - uses: WIPACrepo/wipac-dev-mypy-action@v2.0
+
+
+  ############################################################################
+  # PACKAGING
+  #############################################################################
+
+  py-setup:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
+          ref: ${{ github.ref }}  # dont lock to sha (action needs to push)
+      - uses: WIPACrepo/wipac-dev-py-setup-action@v5.2
+        with:
+          mode: PACKAGING_AND_PYPI
+          python_min: 3.9
+          pypi_name: icecube-skywriter
+          author: WIPAC Developers
+          author_email: developers@icecube.wisc.edu
+          keywords_comma: "IceCube, skymap scanner, skymap, HEALPix, neutrino, reconstruction"
+          auto_mypy_option: True
+
+  py-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: WIPACrepo/wipac-dev-py-dependencies-action@v3.1
+
+
+  ############################################################################
+  # TESTS
+  #############################################################################
 
   unit-tests:
     needs: [py-versions]
@@ -65,22 +100,23 @@ jobs:
       fail-fast: false
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
-        exclude:
-          - py3: 3.8
-          - py3: 3.10
     container:
       image: icecube/icetray:icetray-prod-current-ubuntu22.04
     steps:
-      - uses: actions/checkout@v3
-      - uses: actions/setup-python@v3
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.py3 }}
       - name: pip setup
         run: |
+          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           pip install --upgrade pip wheel setuptools pytest packaging
           pip install .[tests]
       - name: test
         run: |
+          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           /usr/local/icetray/env-shell.sh << EOF
           pytest -vvv tests/unit
           EOF
@@ -93,13 +129,13 @@ jobs:
       matrix:
         py3: ${{ fromJSON(needs.py-versions.outputs.matrix) }}
         file: [Level2pass2_IC86.2011_data_Run00118435_Subrun00000000_00000144_event58198553.i3, Level2pass2_IC86.2013_data_Run00124340_Subrun00000000_00000052_event19400842.i3]
-        exclude:
-          - py3: 3.8
     container:
         image: icecube/icetray:icetray-prod-current-ubuntu22.04
     steps:
-      - uses: actions/checkout@v3
-      # - uses: actions/setup-python@v3
+      - uses: actions/checkout@v5
+        with:
+          ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
+      # - uses: actions/setup-python@v5
       #  with:
       #    python-version: ${{ matrix.py3 }}
       # - name: pip setup
@@ -108,31 +144,43 @@ jobs:
       #    pip install .[tests]
       - name: download test data
         run: |
+          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           wget --user=icecube --password=${{secrets.ICECUBE_PASSWORD}} -O test-file.zst https://convey.icecube.wisc.edu/data/ana/realtime/alert_catalog_v2/input_files/${{ matrix.file }}.zst
           shasum -c tests/data/${{ matrix.file }}.sha
       - name: test routine
         run: |
+          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           /usr/local/icetray/env-shell.sh << EOF
           pip install --upgrade pip wheel setuptools pytest packaging
           pip install .[tests]
           python3 skywriter/i3_to_json.py --extra "OnlineL2_SplineMPE" --extra "OnlineL2_BestFit" --basegcd /opt/i3-data/baseline_gcds/baseline_gcd_136897.i3 test-file.zst
           EOF
-  release:
-    # only run on main/master/default
+
+
+  ############################################################################
+  # GIT TAG + GITHUB RELEASE
+  #############################################################################
+
+  tag-and-release:
+    # only run on main/default
     if: format('refs/heads/{0}', github.event.repository.default_branch) == github.ref
-    needs: [flake8, mypy, py-setup, unit-tests, function-tests]
-    runs-on: ubuntu-latest
-    concurrency: release
-    steps:
-    - uses: actions/checkout@v3
-      with:
-        fetch-depth: 0
-        token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-    - name: Python Semantic Release
-      uses: python-semantic-release/python-semantic-release@v7.34.6
-      with:
-        git_committer_name: ${{ env.BOT_NAME }}
-        git_committer_email: ${{ env.BOT_EMAIL }}
-        github_token: ${{ secrets.PERSONAL_ACCESS_TOKEN }}
-        repository_username: __token__
-        repository_password: ${{ secrets.WIPAC_PYPI_TOKEN }}
+    needs: [
+      py-versions,
+      flake8,
+      mypy,
+      py-setup,
+      py-dependencies,
+      unit-tests,
+      function-tests,
+    ]
+    uses: WIPACrepo/wipac-dev-workflows/.github/workflows/tag-and-release.yml@v1.8
+    permissions: # for GITHUB_TOKEN
+      contents: write
+    with:
+      project-type: python
+      python-version: "${{ fromJSON(needs.py-versions.outputs.matrix)[0] }}"
+      release-artifacts: |
+        py-dependencies-logs
+      publish-to-pypi: true
+    secrets:
+      PYPI_TOKEN: ${{ secrets.WIPAC_PYPI_TOKEN }}
