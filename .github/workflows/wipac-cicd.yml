@@ -114,12 +114,10 @@ jobs:
           python-version: ${{ matrix.py3 }}
       - name: pip setup
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           pip install --upgrade pip wheel setuptools pytest packaging
           pip install .[tests]
       - name: test
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           /usr/local/icetray/env-shell.sh << EOF
           pytest -vvv tests/unit
           EOF
@@ -148,12 +146,10 @@ jobs:
       #    pip install .[tests]
       - name: download test data
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           wget --user=icecube --password=${{secrets.ICECUBE_PASSWORD}} -O test-file.zst https://convey.icecube.wisc.edu/data/ana/realtime/alert_catalog_v2/input_files/${{ matrix.file }}.zst
           shasum -c tests/data/${{ matrix.file }}.sha
       - name: test routine
         run: |
-          set -euo pipefail; echo "now: $(date -u +"%Y-%m-%dT%H:%M:%S.%3N")"
           /usr/local/icetray/env-shell.sh << EOF
           pip install --upgrade pip wheel setuptools pytest packaging
           pip install .[tests]
