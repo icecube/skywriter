@@ -12,6 +12,10 @@ __all__ = ["i3_to_json", "logging_utils"]
 # or negative for a release candidate or beta (after the base version
 # number has been incremented)
 __version__ = "0.0.7"
+# TODO: ^^^ remove __version__ (keep comment below)
+# NOTE: `__version__` is not defined because this package is built using 'setuptools-scm' --
+#   use `importlib.metadata.version(...)` if you need to access version info at runtime.
+
 version_info = (
     int(__version__.split(".")[0]),
     int(__version__.split(".")[1]),
