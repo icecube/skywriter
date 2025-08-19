@@ -108,12 +108,12 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-          fetch-depth: 0  # setuptools-scm needs to access git tags
       - uses: actions/setup-python@v5
         with:
           python-version: ${{ matrix.py3 }}
       - name: pip setup
         run: |
+          export SETUPTOOLS_SCM_PRETEND_VERSION="0.0.0+ci-untagged"
           pip install --upgrade pip wheel setuptools pytest packaging
           pip install .[tests]
       - name: test
@@ -136,7 +136,6 @@ jobs:
       - uses: actions/checkout@v5
         with:
           ref: ${{ github.sha }}  # lock to triggered commit (github.ref is dynamic)
-          fetch-depth: 0  # setuptools-scm needs to access git tags
       # - uses: actions/setup-python@v5
       #  with:
       #    python-version: ${{ matrix.py3 }}
@@ -151,6 +150,7 @@ jobs:
       - name: test routine
         run: |
           /usr/local/icetray/env-shell.sh << EOF
+          export SETUPTOOLS_SCM_PRETEND_VERSION="0.0.0+ci-untagged"
           pip install --upgrade pip wheel setuptools pytest packaging
           pip install .[tests]
           python3 skywriter/i3_to_json.py --extra "OnlineL2_SplineMPE" --extra "OnlineL2_BestFit" --basegcd /opt/i3-data/baseline_gcds/baseline_gcd_136897.i3 test-file.zst
