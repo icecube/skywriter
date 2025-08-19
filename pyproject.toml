@@ -3,9 +3,9 @@
 [project]
 dependencies = [
     "wipac-dev-tools",
-] # (can remove comment) originally migrated from 'setup.cfg' by 'WIPACrepo/wipac-dev-py-setup-action' github action package
+]
 
-[project.optional-dependencies] # (can remove comment) originally migrated from 'setup.cfg' by 'WIPACrepo/wipac-dev-py-setup-action' github action package
+[project.optional-dependencies]
 tests = [
     "pytest",
     "pytest-mock",
