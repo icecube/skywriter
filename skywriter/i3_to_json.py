@@ -105,9 +105,9 @@ def fill_missing_keys(frame, source_pframes):
     pframe = source_pframes[uid]
 
     process_key = partial(fill_key, frame, pframe)
-
+    
     process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
-           
+    
     onlinel2_names = ["OnlineL2", "online_l2"]
 
     keys = [
@@ -160,15 +160,15 @@ def fill_missing_keys(frame, source_pframes):
             if key in frame:
                 process_key(key, gulliver.I3LogLikelihoodFitParams())
                 break
-            
+                
     key = "OnlineL2_BestFit_Name" if "OnlineL2_BestFit_Name" in frame else "online_l2_BestFit_Name"
     process_key(key, dataclasses.I3String("dummy"))
-
+    
     process_key("PoleEHESummaryPulseInfo", recclasses.I3PortiaEvent())
-
+    
     for key in ["IceTop_SLC_InTime", "IceTop_HLC_InTime"]:
         process_key(key, icetray.I3Bool(False))
-
+        
 
 def restore_content(frame, src, keys):
     # The following keys gave serialization errors when trying to copy all keys to the output.
