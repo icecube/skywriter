@@ -107,7 +107,7 @@ def fill_missing_keys(frame, source_pframes):
     process_key = partial(fill_key, frame, pframe)
 
     process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
-
+           
     onlinel2_names = ["OnlineL2", "online_l2"]
 
     keys = [
@@ -119,7 +119,9 @@ def fill_missing_keys(frame, source_pframes):
     for item in keys:
         for name in onlinel2_names:
             key = item.format(onlinel2name=name)
-            process_key(key, dataclasses.I3Particle())
+            if key in frame:
+                process_key(key, dataclasses.I3Particle())
+                break
 
     keys = [
         "{onlinel2name}_SplineMPE_CramerRao_cr_zenith",
@@ -130,7 +132,9 @@ def fill_missing_keys(frame, source_pframes):
     for item in keys:
         for name in onlinel2_names:
             key = item.format(onlinel2name=name)
-            process_key(key, dataclasses.I3Double(0))
+            if key in frame:
+                process_key(key, dataclasses.I3Double(0))
+                break
 
     keys = [
         "{onlinel2name}_SplineMPE_MuE",
@@ -140,9 +144,11 @@ def fill_missing_keys(frame, source_pframes):
     for item in keys:
         for name in onlinel2_names:
             key = item.format(onlinel2name=name)
-            dummy_particle = dataclasses.I3Particle()
-            dummy_particle.energy = 0
-            process_key(key, dummy_particle)
+            if key in frame:
+                dummy_particle = dataclasses.I3Particle()
+                dummy_particle.energy = 0
+                process_key(key, dummy_particle)
+                break
 
     keys = [
         "{onlinel2name}_SPE2itFitFitParams",
@@ -151,7 +157,9 @@ def fill_missing_keys(frame, source_pframes):
     for item in keys:
         for name in onlinel2_names:
             key = item.format(onlinel2name=name)
-            process_key(key, gulliver.I3LogLikelihoodFitParams())
+            if key in frame:
+                process_key(key, gulliver.I3LogLikelihoodFitParams())
+                break
             
     if "OnlineL2_BestFit_Name" in available_keys:
         process_key("OnlineL2_BestFit_Name", dataclasses.I3String("dummy"))
