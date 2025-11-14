@@ -91,7 +91,7 @@ def fill_key(frame, source_pframe, key, default_value) -> None:
         frame[key] = source_pframe[key]
     else:
         LOGGER.debug(f"Setting {key} to dummy value.")
-        frame[key] = default_value
+
 
 def fill_missing_keys(frame, source_pframes):
     """The realtime code to generate the JSON event expects a certain set of keys in the source frame.
