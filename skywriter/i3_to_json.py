@@ -161,10 +161,8 @@ def fill_missing_keys(frame, source_pframes):
                 process_key(key, gulliver.I3LogLikelihoodFitParams())
                 break
             
-    if "OnlineL2_BestFit_Name" in available_keys:
-        process_key("OnlineL2_BestFit_Name", dataclasses.I3String("dummy"))
-    elif "online_l2_BestFit_Name" in available_keys:
-        process_key("online_l2_BestFit_Name", dataclasses.I3String("dummy"))
+    key = "OnlineL2_BestFit_Name" if "OnlineL2_BestFit_Name" in frame else "online_l2_BestFit_Name"
+    process_key(key, dataclasses.I3String("dummy"))
 
     process_key("PoleEHESummaryPulseInfo", recclasses.I3PortiaEvent())
 
