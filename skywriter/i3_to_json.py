@@ -93,76 +93,66 @@ def fill_key(frame, source_pframe, key, default_value) -> None:
         LOGGER.debug(f"Setting {key} to dummy value.")
         frame[key] = default_value
 
-
 def fill_missing_keys(frame, source_pframes):
     """The realtime code to generate the JSON event expects a certain set of keys in the source frame.
     Keys are copied from the original pframe (if one is available for the pending event and if it has the pending key), otherwise they are set to dummy values.
     """
+    
     uid = get_uid(frame)
-
     LOGGER.info(f"{uid} - Filling missing keys for {frame.Stop} frame.")
 
     pframe = source_pframes[uid]
-
     process_key = partial(fill_key, frame, pframe)
+
+    prefixes = ("OnlineL2", "online_l2")
+
+    def fill(patterns, dummy):
+        """Fill the first matching key among OnlineL2/online_l2 variants."""
+        for pattern in patterns:
+            for pre in prefixes:
+                key = pattern.format(onlinel2name=pre)
+                if key in frame:
+                    process_key(key, dummy)
+                    return
 
     process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
 
-    onlinel2_names = ["OnlineL2", "online_l2"]
-
-    keys = [
+    particle_patterns = [
         "{onlinel2name}_SplineMPE",
         "{onlinel2name}_SPE2itFit",
         "{onlinel2name}_BestFit",
         "PoleEHEOpheliaParticle_ImpLF",
     ]
-    for item in keys:
-        for name in onlinel2_names:
-            key = item.format(onlinel2name=name)
-            if key in frame:
-                process_key(key, dataclasses.I3Particle())
-                break
+    fill(particle_patterns, dataclasses.I3Particle())
 
-    keys = [
+    double_patterns = [
         "{onlinel2name}_SplineMPE_CramerRao_cr_zenith",
         "{onlinel2name}_SplineMPE_CramerRao_cr_azimuth",
         "{onlinel2name}_BestFit_CramerRao_cr_zenith",
         "{onlinel2name}_BestFit_CramerRao_cr_azimuth",
     ]
-    for item in keys:
-        for name in onlinel2_names:
-            key = item.format(onlinel2name=name)
-            if key in frame:
-                process_key(key, dataclasses.I3Double(0))
-                break
+    fill(double_patterns, dataclasses.I3Double(0))
 
-    keys = [
+    mu_patterns = [
         "{onlinel2name}_SplineMPE_MuE",
         "{onlinel2name}_SplineMPE_MuEx",
         "{onlinel2name}_BestFit_MuEx",
     ]
-    for item in keys:
-        for name in onlinel2_names:
-            key = item.format(onlinel2name=name)
-            if key in frame:
-                dummy_particle = dataclasses.I3Particle()
-                dummy_particle.energy = 0
-                process_key(key, dummy_particle)
-                break
+    mu_dummy = dataclasses.I3Particle()
+    mu_dummy.energy = 0
+    fill(mu_patterns, mu_dummy)
 
-    keys = [
+    fitparams_patterns = [
         "{onlinel2name}_SPE2itFitFitParams",
         "{onlinel2name}_BestFitFitParams",
     ]
-    for item in keys:
-        for name in onlinel2_names:
-            key = item.format(onlinel2name=name)
-            if key in frame:
-                process_key(key, gulliver.I3LogLikelihoodFitParams())
-                break
+    fill(fitparams_patterns, gulliver.I3LogLikelihoodFitParams())
 
-    key = "OnlineL2_BestFit_Name" if "OnlineL2_BestFit_Name" in frame else "online_l2_BestFit_Name"
-    process_key(key, dataclasses.I3String("dummy"))
+    name_key = (
+        "OnlineL2_BestFit_Name" if "OnlineL2_BestFit_Name" in frame
+        else "online_l2_BestFit_Name"
+    )
+    process_key(name_key, dataclasses.I3String("dummy"))
 
     process_key("PoleEHESummaryPulseInfo", recclasses.I3PortiaEvent())
 
