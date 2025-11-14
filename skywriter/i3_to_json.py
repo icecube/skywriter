@@ -108,35 +108,55 @@ def fill_missing_keys(frame, source_pframes):
 
     process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
 
-    for key in [
-        "OnlineL2_SplineMPE",
-        "OnlineL2_SPE2itFit",
-        "OnlineL2_BestFit",
+    onlinel2_names = ["OnlineL2", "online_l2"]
+
+    keys = [
+        "{onlinel2name}_SplineMPE",
+        "{onlinel2name}_SPE2itFit",
+        "{onlinel2name}_BestFit",
         "PoleEHEOpheliaParticle_ImpLF",
-    ]:
-        process_key(key, dataclasses.I3Particle())
+    ]
+    for item in keys:
+        for name in onlinel2_names:
+            key = item.format(onlinel2name=name)
+            process_key(key, dataclasses.I3Particle())
 
-    for key in [
-        "OnlineL2_SplineMPE_CramerRao_cr_zenith",
-        "OnlineL2_SplineMPE_CramerRao_cr_azimuth",
-        "OnlineL2_BestFit_CramerRao_cr_zenith",
-        "OnlineL2_BestFit_CramerRao_cr_azimuth",
-    ]:
-        process_key(key, dataclasses.I3Double(0))
+    keys = [
+        "{onlinel2name}_SplineMPE_CramerRao_cr_zenith",
+        "{onlinel2name}_SplineMPE_CramerRao_cr_azimuth",
+        "{onlinel2name}_BestFit_CramerRao_cr_zenith",
+        "{onlinel2name}_BestFit_CramerRao_cr_azimuth",
+    ]
+    for item in keys:
+        for name in onlinel2_names:
+            key = item.format(onlinel2name=name)
+            process_key(key, dataclasses.I3Double(0))
 
-    for key in [
-        "OnlineL2_SplineMPE_MuE",
-        "OnlineL2_SplineMPE_MuEx",
-        "OnlineL2_BestFit_MuEx",
-    ]:
-        dummy_particle = dataclasses.I3Particle()
-        dummy_particle.energy = 0
-        process_key(key, dummy_particle)
+    keys = [
+        "{onlinel2name}_SplineMPE_MuE",
+        "{onlinel2name}_SplineMPE_MuEx",
+        "{onlinel2name}_BestFit_MuEx",
+    ]
+    for item in keys:
+        for name in onlinel2_names:
+            key = item.format(onlinel2name=name)
+            dummy_particle = dataclasses.I3Particle()
+            dummy_particle.energy = 0
+            process_key(key, dummy_particle)
 
-    for key in ["OnlineL2_SPE2itFitFitParams", "OnlineL2_BestFitFitParams"]:
-        process_key(key, gulliver.I3LogLikelihoodFitParams())
-
-    process_key("OnlineL2_BestFit_Name", dataclasses.I3String("dummy"))
+    keys = [
+        "{onlinel2name}_SPE2itFitFitParams",
+        "{onlinel2name}_BestFitFitParams",
+    ]
+    for item in keys:
+        for name in onlinel2_names:
+            key = item.format(onlinel2name=name)
+            process_key(key, gulliver.I3LogLikelihoodFitParams())
+            
+    if "OnlineL2_BestFit_Name" in available_keys:
+        process_key("OnlineL2_BestFit_Name", dataclasses.I3String("dummy"))
+    elif "online_l2_BestFit_Name" in available_keys:
+        process_key("online_l2_BestFit_Name", dataclasses.I3String("dummy"))
 
     process_key("PoleEHESummaryPulseInfo", recclasses.I3PortiaEvent())
 
