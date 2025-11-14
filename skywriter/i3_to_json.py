@@ -97,7 +97,7 @@ def fill_missing_keys(frame, source_pframes):
     """The realtime code to generate the JSON event expects a certain set of keys in the source frame.
     Keys are copied from the original pframe (if one is available for the pending event and if it has the pending key), otherwise they are set to dummy values.
     """
-    
+
     uid = get_uid(frame)
     LOGGER.info(f"{uid} - Filling missing keys for {frame.Stop} frame.")
 
