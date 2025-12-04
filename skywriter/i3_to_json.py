@@ -17,9 +17,9 @@ from wipac_dev_tools import logging_tools
 
 
 # try old-style import for CI
-#try:
-#    from I3Tray import I3Tray  # type: ignore[import]
-#except ImportError:
+try:
+    from I3Tray import I3Tray  # type: ignore[import]
+except ImportError:
 from icecube.icetray import I3Tray  # type: ignore[import]
 
 
@@ -46,7 +46,7 @@ from icecube.full_event_followup import (  # type: ignore[import]
 LOGGER.setLevel(logging.DEBUG)
 
 # Activate to dump C++ I3 logging to console output.
-#icetray.logging.console()
+# icetray.logging.console()
 
 
 def get_uid(frame):
