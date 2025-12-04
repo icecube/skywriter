@@ -290,12 +290,12 @@ def i3_to_json(
     filenames: List[str] = []
 
     pframes = extract_pframes(i3files=i3s)
-    
+
     LOGGER.info(f"Extracted {len(pframes)} P-frames from input file.")
-    
+
     tray = I3Tray()
     tray.Add("I3Reader", Filenamelist=i3s)
-
+    
     # Delete SplitUncleanedInIcePulses, if present, and (re)create it
     # by running the trigger splitter module.
     tray.Add(
