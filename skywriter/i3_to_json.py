@@ -5,6 +5,7 @@ import json
 from functools import partial
 
 import os
+
 from pathlib import Path
 from typing import List, Optional, Final
 
@@ -16,10 +17,10 @@ from wipac_dev_tools import logging_tools
 
 
 # try old-style import for CI
-try:
-    from I3Tray import I3Tray  # type: ignore[import]
-except ImportError:
-    from icecube.icetray import I3Tray  # type: ignore[import]
+#try:
+#    from I3Tray import I3Tray  # type: ignore[import]
+#except ImportError:
+from icecube.icetray import I3Tray  # type: ignore[import]
 
 
 from icecube import (  # type: ignore[import] # noqa: F401
@@ -42,8 +43,10 @@ from icecube.full_event_followup import (  # type: ignore[import]
     i3live_json_to_frame_packet,
 )
 
+LOGGER.setLevel(logging.DEBUG)
+
 # Activate to dump C++ I3 logging to console output.
-# icetray.logging.console()
+#icetray.logging.console()
 
 
 def get_uid(frame):
@@ -106,6 +109,9 @@ def fill_missing_keys(frame, source_pframes):
 
     process_key = partial(fill_key, frame, pframe)
 
+    if pframe.Has(filter_globals.EHEAlertFilter):
+        pframe.Delete(filter_globals.EHEAlertFilter)
+    
     process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
 
     for key in [
@@ -284,7 +290,7 @@ def i3_to_json(
     filenames: List[str] = []
 
     pframes = extract_pframes(i3files=i3s)
-
+    
     LOGGER.info(f"Extracted {len(pframes)} P-frames from input file.")
 
     tray = I3Tray()
