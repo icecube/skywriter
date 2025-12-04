@@ -111,9 +111,9 @@ def fill_missing_keys(frame, source_pframes):
 
     if pframe.Has(filter_globals.EHEAlertFilter):
         pframe.Delete(filter_globals.EHEAlertFilter)
-    
+        
     process_key(filter_globals.EHEAlertFilter, icetray.I3Bool(True))
-
+    
     for key in [
         "OnlineL2_SplineMPE",
         "OnlineL2_SPE2itFit",
