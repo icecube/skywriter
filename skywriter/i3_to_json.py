@@ -294,14 +294,14 @@ def i3_to_json(
 
     tray = I3Tray()
     tray.Add("I3Reader", Filenamelist=i3s)
-    
+
     # Delete SplitUncleanedInIcePulses, if present, and (re)create it
     # by running the trigger splitter module.
     tray.Add(
         "Delete",
         Keys=["SplitUncleanedInIcePulses", "SplitUncleanedInIcePulsesTimeRange"],
     )
-    
+
     tray.AddModule(
         "I3TriggerSplitter",
         "InIceSplit",
@@ -309,7 +309,7 @@ def i3_to_json(
         InputResponses=["InIceDSTPulses"],
         OutputResponses=["SplitUncleanedInIcePulses"],
     )
-    
+
     # Converts I3SuperDST to the proper format.
     tray.Add(alertify, If=lambda f: get_uid(f) in pframes)
 
