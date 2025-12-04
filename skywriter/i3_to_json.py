@@ -290,7 +290,6 @@ def i3_to_json(
     filenames: List[str] = []
 
     pframes = extract_pframes(i3files=i3s)
-
     LOGGER.info(f"Extracted {len(pframes)} P-frames from input file.")
 
     tray = I3Tray()
